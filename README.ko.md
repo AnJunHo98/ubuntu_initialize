@@ -16,9 +16,10 @@ Ubuntu 24.04 Desktop 환경을 빠르게 초기화하기 위한 스크립트입�
 ## 빠른 실행
 
 ```bash
-cp /mnt/data/ubuntu24_init_ibus_ros2_research_v2.sh ~/
-chmod +x ~/ubuntu24_init_ibus_ros2_research_v2.sh
-~/ubuntu24_init_ibus_ros2_research_v2.sh
+git clone https://github.com/AnJunHo98/ubuntu_initialize.git
+cd ubuntu_initialize
+chmod +x ubuntu24_init_ibus_ros2_research_v2.sh
+./ubuntu24_init_ibus_ros2_research_v2.sh
 ```
 
 ## 이 스크립트가 하는 일
