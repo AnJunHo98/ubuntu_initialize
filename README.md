@@ -1,79 +1,88 @@
 # ubuntu_initialize
 
-Ubuntu 24.04 Desktop 환경을 빠르게 초기화하기 위한 스크립트입니다. 한글 입력기(IBus), 개발 도구, Google Chrome, VS Code, Docker, Miniconda 연구용 환경, ROS 2 Jazzy까지 한 번에 설정합니다.
+**English** | [한국어](README.ko.md)
 
-저장소에 포함된 메인 스크립트는 `ubuntu24_init_ibus_ros2_research_v2.sh` 입니다.
+Setup script for a fresh Ubuntu 24.04 desktop: Korean IBus input, dev tools, Docker, Miniconda and ROS 2 Jazzy.
 
-## 대상 환경
+## Overview
 
-- Ubuntu 24.04 Desktop 계열 환경
-- `sudo` 사용 가능 계정
-- 인터넷 연결 가능 환경
-- 시스템 전역 패키지와 설정을 변경해도 되는 머신
+A single Bash script that quickly initializes an Ubuntu 24.04 Desktop machine. In one run it sets up Korean input (IBus), common development tools, Google Chrome, VS Code, Docker, a Miniconda research environment and ROS 2 Jazzy.
 
-## 빠른 실행
+The main script in this repository is `ubuntu24_init_ibus_ros2_research_v2.sh`. Its progress messages are printed in Korean.
+
+## Target environment
+
+- Ubuntu 24.04 Desktop
+- An amd64 (x86_64) machine: the Google Chrome package and the Miniconda installer the script downloads are amd64/x86_64 builds
+- An account that can use `sudo`
+- A working internet connection
+- A machine where it is fine to change system-wide packages and settings
+
+## Quick start
 
 ```bash
-cp /mnt/data/ubuntu24_init_ibus_ros2_research_v2.sh ~/
-chmod +x ~/ubuntu24_init_ibus_ros2_research_v2.sh
-~/ubuntu24_init_ibus_ros2_research_v2.sh
+git clone https://github.com/AnJunHo98/ubuntu_initialize.git
+cd ubuntu_initialize
+chmod +x ubuntu24_init_ibus_ros2_research_v2.sh
+./ubuntu24_init_ibus_ros2_research_v2.sh
 ```
 
-## 이 스크립트가 하는 일
+## What the script does
 
-- APT 패키지 인덱스를 갱신하고 기본 개발 도구를 설치합니다.
-- 한글 입력기를 IBus 기반으로 고정합니다.
-- 로케일을 `en_US.UTF-8` 중심으로 설정하고 `ko_KR.UTF-8`도 생성합니다.
-- Google Chrome과 VS Code를 설치합니다.
-- Docker 공식 저장소를 등록하고 Docker Engine 및 Compose 플러그인을 설치합니다.
-- Miniconda를 설치하고 `research` 가상환경을 생성합니다.
-- ROS 2 Jazzy 저장소를 등록하고 Desktop 배포판과 개발 도구를 설치합니다.
-- `~/.bashrc`, `~/.tmux.conf`, Git 전역 설정, VS Code 확장까지 함께 정리합니다.
+- Refreshes the APT package index and installs basic development tools.
+- Pins the Korean input method to IBus.
+- Sets the locale to `en_US.UTF-8` and also generates `ko_KR.UTF-8`.
+- Installs Google Chrome and VS Code.
+- Registers Docker's official repository and installs Docker Engine and the Compose plugin.
+- Installs Miniconda and creates a `research` conda environment.
+- Registers the ROS 2 Jazzy repository and installs the Desktop distribution and development tools.
+- Also sets up `~/.bashrc`, `~/.tmux.conf`, global Git settings and VS Code extensions.
 
-## 실행 전 주의사항
+## Before you run it
 
-- 시스템 패키지를 대량으로 설치하고, 여러 APT 저장소를 추가합니다.
-- `docker.io`, `docker-compose`, `containerd`, `runc` 같은 기존 Docker 관련 패키지는 제거 시도 후 Docker 공식 패키지로 교체합니다.
-- `sudo apt upgrade -y` 가 포함되어 있어 기존 시스템 패키지도 함께 업그레이드됩니다.
-- `~/.bashrc`, `~/.tmux.conf`, `~/.config/environment.d/im.conf` 를 수정하거나 생성합니다.
-- Docker 그룹 반영과 IBus 환경 변수 반영을 위해 로그아웃 후 다시 로그인하는 것이 좋습니다.
-- `code --install-extension` 단계는 VS Code가 정상 설치된 환경을 전제로 합니다.
-- ROS 2 저장소 등록 단계는 실행 시점의 최신 `ros-apt-source` 릴리스를 GitHub API로 조회합니다.
+- It installs a large number of system packages and adds several APT repositories.
+- It tries to remove existing distro Docker packages such as `docker.io`, `docker-compose`, `containerd` and `runc`, and replaces them with Docker's official packages.
+- It runs `sudo apt upgrade -y`, so existing system packages are upgraded as well.
+- It modifies or creates `~/.bashrc`, `~/.tmux.conf` and `~/.config/environment.d/im.conf`.
+- Log out and log back in afterwards so that the Docker group membership and the IBus environment variables take effect.
+- The `code --install-extension` step assumes VS Code was installed successfully.
+- The ROS 2 repository step queries the GitHub API for the latest `ros-apt-source` release at run time.
+- The script runs with `set -euo pipefail`, so it stops at the first failing command, except for commands explicitly followed by `|| true`.
 
-## 단계별 상세 설명
+## Step-by-step details
 
-### 0. 기본 환경 확인
+### 0. Check the basic environment
 
-- `sudo` 명령이 있는지 확인합니다.
-- 없으면 바로 종료합니다.
-- `DEBIAN_FRONTEND=noninteractive` 를 설정해서 APT 설치 중 대화형 입력을 줄입니다.
+- Checks that the `sudo` command exists.
+- Exits immediately if it does not.
+- Sets `DEBIAN_FRONTEND=noninteractive` to reduce interactive prompts during APT installs.
 
-### 1. 패키지 인덱스 갱신 및 기본 개발 도구 설치
+### 1. Refresh the package index and install basic development tools
 
-다음 범주의 패키지를 설치합니다.
+Installs packages in these groups:
 
-- 다운로드 및 저장소 관련: `wget`, `curl`, `ca-certificates`, `gpg`, `apt-transport-https`, `software-properties-common`, `gnupg`, `lsb-release`
-- 빌드 도구: `build-essential`, `cmake`, `ninja-build`, `pkg-config`, `clang`, `gdb`, `valgrind`, `ccache`
-- 기본 CLI 도구: `git`, `git-lfs`, `vim`, `nano`, `tmux`, `zsh`, `unzip`, `zip`, `p7zip-full`, `jq`, `tree`, `htop`, `net-tools`
+- Download and repository tools: `wget`, `curl`, `ca-certificates`, `gpg`, `apt-transport-https`, `software-properties-common`, `gnupg`, `lsb-release`
+- Build tools: `build-essential`, `cmake`, `ninja-build`, `pkg-config`, `clang`, `gdb`, `valgrind`, `ccache`
+- Basic CLI tools: `git`, `git-lfs`, `vim`, `nano`, `tmux`, `zsh`, `unzip`, `zip`, `p7zip-full`, `jq`, `tree`, `htop`, `net-tools`
 - SSH: `openssh-client`, `openssh-server`
-- Python 기본 환경: `python3-pip`, `python3-venv`, `python3-dev`, `pipx`
-- 멀티미디어/GUI 의존성: `ffmpeg`, `libgl1`, `libglib2.0-0`, `terminator`
-- 한글 입력 및 로케일 관련: `ibus`, `ibus-hangul`, `im-config`, `language-pack-ko`, `locales`
+- Python basics: `python3-pip`, `python3-venv`, `python3-dev`, `pipx`
+- Multimedia/GUI dependencies: `ffmpeg`, `libgl1`, `libglib2.0-0`, `terminator`
+- Korean input and locale: `ibus`, `ibus-hangul`, `im-config`, `language-pack-ko`, `locales`
 
-추가로 다음도 실행합니다.
+It also runs:
 
 - `git lfs install || true`
 - `pipx ensurepath || true`
 
-### 2. 한글 입력기를 IBus로 고정
+### 2. Pin the Korean input method to IBus
 
-입력기 관련 설정을 정리합니다.
+Cleans up input method settings:
 
-- `im-config -n ibus` 로 입력기 프레임워크를 IBus로 지정합니다.
-- `~/.config/environment.d/im.conf` 파일을 새로 작성합니다.
-- 기존 `im.conf` 가 있으면 삭제 후 다시 생성합니다.
+- Selects IBus as the input method framework with `im-config -n ibus`.
+- Writes a new `~/.config/environment.d/im.conf`.
+- Deletes any existing `im.conf` first and recreates it.
 
-생성되는 내용은 아래와 같습니다.
+The generated content:
 
 ```ini
 GTK_IM_MODULE=ibus
@@ -83,33 +92,31 @@ SDL_IM_MODULE=ibus
 INPUT_METHOD=ibus
 ```
 
-이 설정은 GTK, Qt, SDL 계열 애플리케이션에서 IBus를 사용하도록 유도합니다.
+This makes GTK, Qt and SDL applications use IBus.
 
-### 3. 로케일 설정
+### 3. Configure locales
 
-다음 작업을 수행합니다.
+- Generates the `en_US`, `en_US.UTF-8`, `ko_KR` and `ko_KR.UTF-8` locales.
+- Sets the default system locale to `LANG=en_US.UTF-8` and `LC_ALL=en_US.UTF-8`.
 
-- `en_US`, `en_US.UTF-8`, `ko_KR`, `ko_KR.UTF-8` 로케일 생성
-- 기본 시스템 로케일을 `LANG=en_US.UTF-8`, `LC_ALL=en_US.UTF-8` 로 설정
+In other words, the system language/locale is English UTF-8, with the Korean locale also available.
 
-즉, 시스템 기본 언어/로케일은 영문 UTF-8로 맞추고, 한국어 로케일도 함께 사용할 수 있게 준비합니다.
+### 4. Install Google Chrome
 
-### 4. Google Chrome 설치
+- Installs only if the `google-chrome` command is missing.
+- Downloads and installs `https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb`.
+- Skips this step if Chrome is already installed.
 
-- `google-chrome` 명령이 없을 때만 설치합니다.
-- `https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb` 를 내려받아 설치합니다.
-- 이미 설치되어 있으면 건너뜁니다.
+### 5. Register the VS Code repository and install VS Code
 
-### 5. VS Code 저장소 등록 및 설치
+Registers the Microsoft package key and repository, then installs VS Code:
 
-Microsoft 패키지 키와 저장소를 등록한 뒤 VS Code를 설치합니다.
-
-- `/usr/share/keyrings/microsoft.gpg` 생성
-- `/etc/apt/sources.list.d/vscode.sources` 생성
+- Creates `/usr/share/keyrings/microsoft.gpg` (if it does not exist)
+- Creates `/etc/apt/sources.list.d/vscode.sources`
 - `sudo apt update`
 - `sudo apt install -y code`
 
-추가되는 저장소 정보는 아래와 같습니다.
+Repository entry that is added:
 
 ```text
 Types: deb
@@ -120,11 +127,11 @@ Architectures: amd64,arm64,armhf
 Signed-By: /usr/share/keyrings/microsoft.gpg
 ```
 
-### 6. Docker 공식 저장소 등록 및 설치
+### 6. Register Docker's official repository and install Docker
 
-기존 배포판 Docker 패키지를 제거 시도한 뒤 Docker 공식 저장소 기반으로 다시 설치합니다.
+Tries to remove the distro Docker packages, then reinstalls from Docker's official repository.
 
-제거 시도 대상:
+Packages it tries to remove:
 
 - `docker.io`
 - `docker-compose`
@@ -134,42 +141,42 @@ Signed-By: /usr/share/keyrings/microsoft.gpg
 - `containerd`
 - `runc`
 
-이후 수행되는 작업:
+Then it:
 
-- `/etc/apt/keyrings/docker.asc` 에 Docker GPG 키 저장
-- `/etc/apt/sources.list.d/docker.sources` 생성
-- `sudo apt update`
-- 다음 패키지 설치
+- Saves Docker's GPG key to `/etc/apt/keyrings/docker.asc`
+- Creates `/etc/apt/sources.list.d/docker.sources`
+- Runs `sudo apt update`
+- Installs:
   - `docker-ce`
   - `docker-ce-cli`
   - `containerd.io`
   - `docker-buildx-plugin`
   - `docker-compose-plugin`
-- `docker` 그룹 생성 시도
-- 현재 사용자를 `docker` 그룹에 추가
-- Docker 서비스 `enable` 및 `start`
+- Tries to create the `docker` group
+- Adds the current user to the `docker` group
+- Enables and starts the Docker service
 
-즉, 설치 후에는 `sudo` 없이 Docker를 쓰기 위한 준비까지 같이 합니다. 다만 그룹 반영은 재로그인이 필요할 수 있습니다.
+So after installation Docker is prepared for use without `sudo`, although the group change may require logging in again.
 
-### 7. Miniconda 설치
+### 7. Install Miniconda
 
-- `~/miniconda3` 디렉터리가 없으면 Miniconda를 설치합니다.
-- 이미 있으면 재설치하지 않습니다.
-- 설치 파일은 `Miniconda3-latest-Linux-x86_64.sh` 를 사용합니다.
+- Installs Miniconda if `~/miniconda3` does not exist.
+- Does not reinstall if it already exists.
+- Uses the `Miniconda3-latest-Linux-x86_64.sh` installer.
 
-즉, 이 스크립트는 x86_64 기준 Miniconda 설치 경로를 가정합니다.
+So the script assumes an x86_64 Miniconda install.
 
-### 8. conda bash 초기화 및 연구용 환경 생성
+### 8. Initialize conda for bash and create the research environment
 
-Miniconda가 설치되어 있으면 다음을 수행합니다.
+If Miniconda is installed, it:
 
-- `conda shell.bash hook` 로 현재 셸에서 conda 사용 가능하게 설정
-- `conda init bash`
-- `research` 이름의 conda 환경 생성 (`python=3.11`)
-- `research` 환경의 `pip` 업그레이드
-- `research` 환경에 Python 패키지 설치
+- Enables conda in the current shell with `conda shell.bash hook`
+- Runs `conda init bash`
+- Creates a conda environment named `research` (`python=3.11`) if it does not exist yet
+- Upgrades `pip` in the `research` environment
+- Installs Python packages into the `research` environment
 
-설치되는 Python 패키지:
+Python packages installed:
 
 - `numpy`
 - `scipy`
@@ -185,19 +192,19 @@ Miniconda가 설치되어 있으면 다음을 수행합니다.
 - `tqdm`
 - `seaborn`
 
-즉, 데이터 분석, Jupyter, 기초 수치 계산, 시각화, OpenCV, 시리얼 통신까지 바로 연구용으로 쓸 수 있는 최소 구성을 만듭니다.
+This gives a minimal research setup for data analysis, Jupyter, basic numerical computing, plotting, OpenCV and serial communication.
 
-### 9. ROS 2 Jazzy 저장소 등록 및 설치
+### 9. Register the ROS 2 Jazzy repository and install ROS 2
 
-다음 순서로 진행합니다.
+In this order:
 
-- `universe` 저장소 활성화 시도
-- `curl` 설치 보장
-- GitHub API에서 `ros-infrastructure/ros-apt-source` 최신 릴리스 태그 조회
-- 현재 Ubuntu 코드네임에 맞는 `ros2-apt-source_..._all.deb` 패키지 다운로드 및 설치
+- Tries to enable the `universe` repository
+- Makes sure `curl` is installed
+- Looks up the latest release tag of `ros-infrastructure/ros-apt-source` via the GitHub API
+- Downloads and installs the `ros2-apt-source_..._all.deb` package for the current Ubuntu codename
 - `sudo apt update`
 - `sudo apt upgrade -y`
-- ROS 2 관련 패키지 설치
+- Installs ROS 2 packages:
   - `ros-dev-tools`
   - `ros-jazzy-desktop`
   - `python3-colcon-common-extensions`
@@ -205,14 +212,14 @@ Miniconda가 설치되어 있으면 다음을 수행합니다.
 - `sudo rosdep init`
 - `rosdep update`
 
-즉, ROS 2 Jazzy Desktop 전체와 빌드/의존성 도구를 함께 준비합니다.
+This prepares the full ROS 2 Jazzy Desktop together with the build and dependency tools.
 
-### 10. ROS 2 환경 및 워크스페이스 초기화
+### 10. Initialize the ROS 2 environment and workspace
 
-- `~/ros2_ws/src` 생성
-- `~/.bashrc` 에 ROS 2 및 워크스페이스 관련 설정 추가
+- Creates `~/ros2_ws/src`
+- Adds ROS 2 and workspace settings to `~/.bashrc` (each line only if it is not already there)
 
-추가되는 내용:
+Lines added:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
@@ -224,19 +231,17 @@ alias cb="cd $HOME/ros2_ws && colcon build --symlink-install"
 alias ct="colcon test --event-handlers console_direct+"
 ```
 
-즉, 새 터미널을 열면 ROS 2 기본 환경을 바로 불러오고, 워크스페이스 이동/빌드/테스트용 alias도 함께 제공합니다.
+New terminals load the ROS 2 environment right away and get aliases for moving to, building and testing the workspace.
 
-### 11. tmux 및 편의 설정
+### 11. tmux and convenience settings
 
-다음 작업을 수행합니다.
+- Creates `~/.tmux.conf` only if it does not exist
+- Enables mouse support, a larger history and vi key mode
+- Adds `ll`, `la` and `l` aliases to `~/.bashrc`
+- Sets the global Git default branch to `main`
+- Sets the global Git editor to `code --wait` if VS Code is available
 
-- `~/.tmux.conf` 가 없을 때만 생성
-- 마우스 사용, 히스토리 확장, vi 키 모드 설정
-- `~/.bashrc` 에 `ll`, `la`, `l` alias 추가
-- Git 전역 기본 브랜치를 `main` 으로 설정
-- VS Code가 있으면 Git 전역 에디터를 `code --wait` 로 설정
-
-생성되는 `~/.tmux.conf` 내용:
+Generated `~/.tmux.conf`:
 
 ```tmux
 set -g mouse on
@@ -245,9 +250,9 @@ setw -g mode-keys vi
 bind r source-file ~/.tmux.conf \; display-message "tmux reloaded"
 ```
 
-### 12. VS Code 권장 확장 설치
+### 12. Install recommended VS Code extensions
 
-`code` 명령이 있으면 다음 확장을 설치합니다.
+If the `code` command is available, installs:
 
 - `ms-python.python`
 - `ms-toolsai.jupyter`
@@ -255,13 +260,11 @@ bind r source-file ~/.tmux.conf \; display-message "tmux reloaded"
 - `ms-iot.vscode-ros`
 - `ms-azuretools.vscode-docker`
 
-즉, Python, Jupyter, C/C++, ROS, Docker 작업을 바로 시작할 수 있게 맞춥니다.
+This prepares VS Code for Python, Jupyter, C/C++, ROS and Docker work.
 
-### 13. 설치 확인
+### 13. Verify the installation
 
-설치 마지막에는 버전과 상태를 출력합니다.
-
-확인 대상:
+At the end it prints versions and status for:
 
 - Git
 - Google Chrome
@@ -273,48 +276,57 @@ bind r source-file ~/.tmux.conf \; display-message "tmux reloaded"
 - zsh
 - ROS 2
 - colcon
-- IBus 관련 환경 변수
-- `~/.config/environment.d/im.conf` 내용
-- 현재 IBus 엔진
+- IBus-related environment variables
+- the contents of `~/.config/environment.d/im.conf`
+- the current IBus engine
 - `ROS_DISTRO`
-- `~/ros2_ws` 경로
+- the `~/ros2_ws` path
 
-## 변경되는 파일 및 설정 요약
+## Files and settings changed
 
-이 스크립트가 직접 생성하거나 수정하는 대표 항목은 아래와 같습니다.
+Main items the script creates or modifies directly:
 
 - `~/.config/environment.d/im.conf`
 - `~/.bashrc`
-- `~/.tmux.conf` (없을 때만 생성)
+- `~/.tmux.conf` (created only if missing)
 - `/usr/share/keyrings/microsoft.gpg`
 - `/etc/apt/sources.list.d/vscode.sources`
 - `/etc/apt/keyrings/docker.asc`
 - `/etc/apt/sources.list.d/docker.sources`
-- Git 전역 설정
+- Global Git settings
   - `init.defaultBranch=main`
-  - `core.editor="code --wait"` (VS Code가 있을 때)
-- Docker 서비스 활성화 및 시작
-- 현재 사용자의 Docker 그룹 추가
-- `~/miniconda3` 설치 및 `research` conda 환경 생성
-- `~/ros2_ws/src` 워크스페이스 생성
+  - `core.editor="code --wait"` (when VS Code is available)
+- Docker service enabled and started
+- Current user added to the `docker` group
+- `~/miniconda3` installed and the `research` conda environment created
+- `~/ros2_ws/src` workspace created
 
-## 설치 결과 요약
+## Expected result
 
-스크립트가 정상 완료되면 다음 상태를 기대할 수 있습니다.
+When the script finishes successfully:
 
-- 일반 개발 도구와 터미널 유틸리티가 설치됨
-- IBus + ibus-hangul 기반 한글 입력 환경이 구성됨
-- Chrome, VS Code, Docker, Miniconda가 설치됨
-- `research` conda 환경에서 과학 계산 및 Jupyter 관련 패키지를 바로 사용 가능함
-- ROS 2 Jazzy Desktop 및 `colcon`, `rosdep` 사용 준비가 끝남
-- 새 터미널에서 ROS 2 환경과 편의 alias를 바로 사용할 수 있음
+- General development tools and terminal utilities are installed
+- Korean input with IBus + ibus-hangul is configured
+- Chrome, VS Code, Docker and Miniconda are installed
+- Scientific computing and Jupyter packages are ready in the `research` conda environment
+- ROS 2 Jazzy Desktop, `colcon` and `rosdep` are ready to use
+- New terminals have the ROS 2 environment and convenience aliases
 
-## 실행 후 권장 사항
+## After running
 
-- 로그아웃 후 다시 로그인해서 Docker 그룹과 입력기 환경 변수를 반영하는 것을 권장합니다.
-- 필요하면 `source ~/.bashrc` 를 실행해 alias와 ROS 설정을 즉시 반영합니다.
-- ROS 2 워크스페이스를 사용할 때는 `~/ros2_ws/src` 아래에서 패키지를 관리하면 됩니다.
+- Log out and log back in so the Docker group and input method environment variables take effect.
+- If needed, run `source ~/.bashrc` to apply the aliases and ROS settings immediately.
+- Keep your ROS 2 packages under `~/ros2_ws/src`.
 
-## 포함 파일
+## Repository layout
 
-- `ubuntu24_init_ibus_ros2_research_v2.sh`: 실제 설치 및 설정 스크립트
+- `ubuntu24_init_ibus_ros2_research_v2.sh`: the actual install and configuration script
+- `README.ko.md`: Korean version of this README
+
+## Status
+
+Single-script project; last updated in April 2026.
+
+## License
+
+Released under the MIT License. See [LICENSE](LICENSE).
